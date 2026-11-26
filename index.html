@@ -311,6 +311,18 @@ h1,#ans{color:#fff;text-shadow:0 1px 3px rgba(0,40,100,.55),0 0 18px rgba(0,40,1
 #sug .btn:not(.pri):hover{background:light-dark(rgba(255,255,255,.8),rgba(255,255,255,.12))}
 #sug .sgt input{background:var(--bg);color:var(--ink);border-color:var(--line)}
 #sug.ping{box-shadow:0 0 0 4px rgba(181,237,121,.75),0 8px 30px rgba(10,30,60,.18)}
+.qp{position:fixed;z-index:25;width:min(300px,calc(100vw - 20px));padding:16px;border-radius:20px;background:light-dark(rgba(255,255,255,.92),rgba(28,28,34,.92));-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);border:1px solid var(--glass-line);box-shadow:0 18px 50px rgba(0,20,50,.35);display:flex;flex-direction:column;gap:4px}
+.qp[hidden]{display:none}
+.qp b{font-size:17px;line-height:1.25}.qp small{color:var(--mut);font-size:14px}
+.qp small:empty{display:none}
+.qpb{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.qpb .btn{width:100%;min-height:44px}
+.qpb .lk{align-self:center;color:var(--mut);text-decoration:underline;text-underline-offset:3px;font-size:14px;min-height:32px}
+.qp form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.qp form input{min-height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--bg);font-size:16px;color:var(--ink)}
+.qp form .nb .btn{flex:1}
+#today.away{background:linear-gradient(180deg,var(--g1),var(--g2));color:var(--gink);border-color:rgba(90,150,40,.45)}
+.adc{cursor:copy}.mc{cursor:copy}
 </style>
 </head>
 <body>
@@ -421,6 +433,11 @@ h1,#ans{color:#fff;text-shadow:0 1px 3px rgba(0,40,100,.55),0 0 18px rgba(0,40,1
     <label class="fl" style="margin-top:14px">Notas<textarea id="f-notes"></textarea></label>
     <div class="act"><button type="button" class="del" id="f-del">Excluir</button><button type="button" class="btn" id="f-cancel">Cancelar</button><button class="go">Salvar</button></div>
   </form>
+</div>
+<div id="qp" class="qp" role="dialog" aria-label="Adicionar" hidden>
+  <b id="qpd"></b><small id="qph"></small>
+  <div class="qpb" id="qpb"><button type="button" class="btn pri" id="qpe">Adicionar evento</button><button type="button" class="btn" id="qpt">Adicionar tarefa</button><button type="button" class="lk" id="qpv">Ver este dia</button></div>
+  <form id="qpf" autocomplete="off" hidden><input id="qpi" placeholder="O que precisa fazer?" aria-label="Nova tarefa"><div class="nb"><button class="btn pri">Salvar tarefa</button><button type="button" class="btn" id="qpc">Voltar</button></div></form>
 </div>
 <div id="toast" role="status"><span id="tt"></span><button id="tb" hidden></button></div>
 
@@ -533,8 +550,10 @@ function title(){if(view==='month')return `${MES[cur.getMonth()]} ${cur.getFullY
   if(view==='money')return `Gastos de ${MES[cur.getMonth()]}`;
   if(view==='agenda')return `A partir de ${cur.getDate()} ${MES[cur.getMonth()].slice(0,3)}`;
   const d=gridDays(),a=d[0],b=d.at(-1);return a.getMonth()===b.getMonth()?`${MES[a.getMonth()]} ${a.getFullYear()}`:`${MES[a.getMonth()].slice(0,3)} – ${MES[b.getMonth()].slice(0,3)} ${b.getFullYear()}`}
+function relDay(d){const n=Math.round((sod(d)-sod(new Date()))/864e5);return n===0?'Hoje':n===1?'Amanhã':n===-1?'Ontem':n===2?'Depois de amanhã':n===-2?'Anteontem':''}
 function render(){const gb=$('#gb');if(gb)gbTop=gb.scrollTop;
   $('#ttl').textContent=title();
+  {const b=$('#today'),r=view==='day'?relDay(cur):'',isT=ymd(cur)===ymd(new Date());b.textContent=r||'Hoje';b.classList.toggle('away',view==='day'&&!isT);b.title=isT||view!=='day'?'Ir para hoje':'Você está vendo: '+(r||ymd(cur).split('-').reverse().join('/'))+'. Clique para voltar para hoje'}
   document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===view));
   $('#agq').hidden=view!=='agenda';$('.nav').style.visibility=view==='tasks'?'hidden':'';
   $('#main').innerHTML=view==='money'?renderMoney():view==='tasks'?renderTasks():view==='month'?renderMonth():view==='agenda'?renderAgenda():(S.events.length?'':emptyBox())+renderGrid(gridDays());
@@ -815,14 +834,34 @@ $('#today').onclick=()=>{cur=sod(new Date());gbTop=null;render()};
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{view=b.dataset.v;gbTop=null;render()});
 $('#agq').addEventListener('input',()=>{$('#main').innerHTML=renderAgenda()});
 $('#newb').onclick=()=>{const s=new Date();s.setMinutes(0,0,0);s.setHours(s.getHours()+1);openEd(null,{start:toLocal(s),end:toLocal(new Date(+s+36e5))})};
+let qpCtx=null;
+function closeQP(){$('#qp').hidden=true;qpCtx=null}
+function openQP(x,y,day,mins){qpCtx={day,mins};const d=parse(day),r=relDay(d);
+  $('#qpd').textContent=(r?r+', ':'')+`${DL[d.getDay()]} ${d.getDate()} de ${MES[d.getMonth()]}`;
+  $('#qph').textContent=mins==null?'':`às ${pad(Math.floor(mins/60))}:${pad(mins%60)}`;
+  $('#qpb').hidden=false;$('#qpf').hidden=true;$('#qpv').hidden=view==='day';
+  const q=$('#qp');q.hidden=false;const W=q.offsetWidth,H=q.offsetHeight;
+  if(innerWidth<600){q.style.left=((innerWidth-W)/2)+'px';q.style.top='auto';q.style.bottom='16px'}
+  else{q.style.bottom='auto';q.style.left=Math.max(10,Math.min(x+8,innerWidth-W-10))+'px';q.style.top=Math.max(10,Math.min(y+8,innerHeight-H-10))+'px'}
+  $('#qpe').focus()}
+$('#qpe').onclick=()=>{const c=qpCtx;closeQP();const d=parse(c.day);if(c.mins!=null)d.setMinutes(c.mins);else{const now=new Date();ymd(d)===ymd(now)?d.setHours(now.getHours()+1,0):d.setHours(9,0)}openEd(null,{start:toLocal(d),end:toLocal(new Date(+d+36e5))})};
+$('#qpt').onclick=()=>{$('#qpb').hidden=true;$('#qpf').hidden=false;$('#qpi').value='';$('#qpi').focus()};
+$('#qpc').onclick=()=>{$('#qpf').hidden=true;$('#qpb').hidden=false};
+$('#qpv').onclick=()=>{const c=qpCtx;closeQP();cur=parse(c.day);view='day';gbTop=null;render()};
+$('#qpf').addEventListener('submit',e=>{e.preventDefault();const v=$('#qpi').value.trim();if(!v){$('#qpi').focus();return}const day=qpCtx.day;closeQP();
+  S.tasks.unshift({id:uid(),title:v.slice(0,500),done:false,due:day});save();refreshTasks();toast('Tarefa adicionada à lista de tarefas')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#qp').hidden){e.stopPropagation();closeQP()}},true);
+addEventListener('resize',()=>{if(!$('#qp').hidden)closeQP()});
 document.addEventListener('click',e=>{
+  if(!$('#qp').hidden){if(!e.target.closest('#qp'))closeQP();return}
   const xd=e.target.closest('[data-xday]');if(xd){openX(xd.dataset.xday);return}
   if(e.target.id==='xadd'){openX(ymd(new Date()));return}
   const sug=e.target.closest('.sug');if(sug){$('#cmd').value=sug.textContent;$('#cmd').focus();return}
   const idb=e.target.closest('[data-id]');if(idb){const ev=S.events.find(x=>x.id===idb.dataset.id);if(ev){e.stopPropagation();openEd(ev)}return}
   const dh=e.target.closest('[data-day].dh');if(dh){cur=parse(dh.dataset.day);view='day';render();return}
-  const md=e.target.closest('[data-mday]');if(md){cur=parse(md.dataset.mday);view='day';gbTop=null;render();return}
-  const c=e.target.closest('.col');if(c&&e.target===c){const mins=Math.max(0,Math.min(23.5*60,Math.floor(e.offsetY/HR*2)*30));const d=parse(c.dataset.day);d.setMinutes(mins);openEd(null,{start:toLocal(d),end:toLocal(new Date(+d+36e5))});return}
+  const md=e.target.closest('[data-mday]');if(md){openQP(e.clientX,e.clientY,md.dataset.mday,null);return}
+  const c=e.target.closest('.col');if(c&&e.target===c){const mins=Math.max(0,Math.min(23.5*60,Math.floor(e.offsetY/HR*2)*30));openQP(e.clientX,e.clientY,c.dataset.day,mins);return}
+  const adc=e.target.closest('.adc');if(adc&&e.target===adc){const i=[...adc.parentElement.children].indexOf(adc)-1,d=gridDays()[i];if(d)openQP(e.clientX,e.clientY,ymd(d),null);return}
   const tx=e.target.closest('[data-tx]');if(tx){snap();S.tasks=S.tasks.filter(t=>t.id!==tx.dataset.tx);save();refreshTasks();toast('Tarefa apagada',['Desfazer',undo]);return}
   if(e.target.id==='tclr'){snap();S.tasks=S.tasks.filter(t=>!t.done);save();refreshTasks();toast('Concluídas removidas',['Desfazer',undo])}});
 document.addEventListener('change',e=>{const id=e.target.dataset&&e.target.dataset.tk;if(id){const t=S.tasks.find(t=>t.id===id);if(t){t.done=e.target.checked;save();refreshTasks()}}
