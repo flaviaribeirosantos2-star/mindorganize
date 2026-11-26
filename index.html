@@ -550,10 +550,24 @@ function title(){if(view==='month')return `${MES[cur.getMonth()]} ${cur.getFullY
   if(view==='money')return `Gastos de ${MES[cur.getMonth()]}`;
   if(view==='agenda')return `A partir de ${cur.getDate()} ${MES[cur.getMonth()].slice(0,3)}`;
   const d=gridDays(),a=d[0],b=d.at(-1);return a.getMonth()===b.getMonth()?`${MES[a.getMonth()]} ${a.getFullYear()}`:`${MES[a.getMonth()].slice(0,3)} – ${MES[b.getMonth()].slice(0,3)} ${b.getFullYear()}`}
-function relDay(d){const n=Math.round((sod(d)-sod(new Date()))/864e5);return n===0?'Hoje':n===1?'Amanhã':n===-1?'Ontem':n===2?'Depois de amanhã':n===-2?'Anteontem':''}
+const wkStart=d=>addDays(sod(d),-d.getDay());
+const monDiff=(a,b)=>(a.getFullYear()-b.getFullYear())*12+a.getMonth()-b.getMonth();
+function relMonth(m){return m===0?'Este mês':m===1?'Mês que vem':m===-1?'Mês passado':m>1?(m<12?`Daqui a ${m} meses`:m<24?'Ano que vem':`Daqui a ${Math.floor(m/12)} anos`):(-m<12?`Há ${-m} meses`:-m<24?'Ano passado':`Há ${Math.floor(-m/12)} anos`)}
+function relDay(d){const t=sod(new Date()),n=Math.round((sod(d)-t)/864e5);
+  if(n===0)return'Hoje';if(n===1)return'Amanhã';if(n===2)return'Depois de amanhã';if(n===-1)return'Ontem';if(n===-2)return'Anteontem';
+  const w=Math.round((wkStart(d)-wkStart(t))/(7*864e5));
+  if(w===0)return'Esta semana';if(w===1)return'Semana que vem';if(w===-1)return'Semana passada';
+  return relMonth(monDiff(d,t))}
+function relWeek(d){const t=sod(new Date()),w=Math.round((wkStart(d)-wkStart(t))/(7*864e5));
+  return w===0?'Hoje':w===1?'Semana que vem':w===-1?'Semana passada':Math.abs(w)<=4?(w>0?`Daqui a ${w} semanas`:`Há ${-w} semanas`):relMonth(monDiff(d,t))}
 function render(){const gb=$('#gb');if(gb)gbTop=gb.scrollTop;
   $('#ttl').textContent=title();
-  {const b=$('#today'),r=view==='day'?relDay(cur):'',isT=ymd(cur)===ymd(new Date());b.textContent=r||'Hoje';b.classList.toggle('away',view==='day'&&!isT);b.title=isT||view!=='day'?'Ir para hoje':'Você está vendo: '+(r||ymd(cur).split('-').reverse().join('/'))+'. Clique para voltar para hoje'}
+  {const b=$('#today'),now=new Date();let r='Hoje';
+  if(view==='day')r=relDay(cur);
+  else if(view==='week'){const ds=gridDays();r=ds.some(d=>ymd(d)===ymd(now))?'Hoje':relWeek(ds[0])}
+  else if(view==='month'||view==='money'){const m=monDiff(cur,now);r=m===0?'Hoje':relMonth(m)}
+  else if(view==='agenda'){r=ymd(cur)===ymd(now)?'Hoje':relDay(cur)}
+  b.textContent=r;b.classList.toggle('away',r!=='Hoje');b.title=r==='Hoje'?'Ir para hoje':`Você está vendo: ${r.toLowerCase()}. Clique para voltar para hoje`}
   document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===view));
   $('#agq').hidden=view!=='agenda';$('.nav').style.visibility=view==='tasks'?'hidden':'';
   $('#main').innerHTML=view==='money'?renderMoney():view==='tasks'?renderTasks():view==='month'?renderMonth():view==='agenda'?renderAgenda():(S.events.length?'':emptyBox())+renderGrid(gridDays());

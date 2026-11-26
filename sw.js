@@ -1,5 +1,5 @@
 // Faz o app abrir mesmo sem internet (guarda os arquivos no aparelho).
-const CACHE = 'minha-agenda-v8';
+const CACHE = 'minha-agenda-v9';
 const SHELL = ['./', './index.html', './sync.js', './firebase-config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './fundo.jpg'];
 const EXTERNAL = /^(www\.gstatic\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)$/;
 
