@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minha Agenda: como colocar no ar</title>
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#fff,#121215);--ink:light-dark(#17171c,#f1f0ec);--mut:light-dark(#62616a,#a3a2ab);--line:light-dark(#ecebe6,#2a2a30);--soft:light-dark(#f6f5f1,#1b1b20);--acc:#ff5a3c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:36px 20px 80px}
+h1{font-size:clamp(30px,5vw,42px);line-height:1.1;margin:0 0 10px}
+h2{font-size:24px;margin:44px 0 6px;padding-top:20px;border-top:2px solid var(--ink)}
+h2 small{display:block;font-size:15px;color:var(--mut);font-weight:500}
+p.lead{color:var(--mut);font-size:18px;margin:0 0 20px}
+ol{padding-left:0;list-style:none;counter-reset:s}
+ol>li{counter-increment:s;position:relative;padding:14px 0 14px 52px;border-bottom:1px solid var(--line)}
+ol>li::before{content:counter(s);position:absolute;left:0;top:14px;width:36px;height:36px;border-radius:50%;background:var(--acc);color:#fff;font-weight:800;display:grid;place-items:center}
+ol.c2{counter-reset:s 4}ol.c3{counter-reset:s 9}
+b.k{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-weight:600;white-space:nowrap}
+code{background:var(--soft);border-radius:5px;padding:1px 5px;font-size:15px;overflow-wrap:anywhere}
+pre{background:var(--soft);border-radius:10px;padding:12px 14px;overflow-x:auto;font-size:14px;line-height:1.5}
+.box{background:var(--soft);border-radius:14px;padding:16px 18px;margin:18px 0}
+.box b{display:block;margin-bottom:4px}
+ul{padding-left:20px}li{margin:4px 0}
+a{color:inherit;text-underline-offset:3px}
+.files{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;font-size:15px}
+.files code{justify-self:start}
+@media(max-width:560px){.files{grid-template-columns:1fr}.files span{margin-bottom:8px;color:var(--mut)}}
+</style>
+</head>
+<body>
+<main>
+<h1>Minha Agenda: como colocar no ar</h1>
+<p class="lead">São três partes: criar o lugar dos dados (Firebase), publicar o app (GitHub Pages) e entrar nele no computador e no iPhone. Tudo é gratuito e não pede cartão. Leva uns 20 minutos, uma vez só.</p>
+
+<div class="box"><b>O que tem na pasta</b>
+<div class="files">
+<code>index.html</code><span>o app</span>
+<code>sync.js</code><span>a sincronização com a nuvem</span>
+<code>firebase-config.js</code><span>onde você cola o código do seu Firebase (passo 8)</span>
+<code>sw.js</code>, <code>manifest.webmanifest</code><span>fazem o app abrir sem internet e virar ícone no iPhone</span>
+<code>icon-*.png</code>, <code>apple-touch-icon.png</code><span>ícones</span>
+<code>firestore.rules</code><span>as regras de segurança que você cola no passo 3</span>
+</div></div>
+
+<h2>Parte 1: Firebase<small>onde seus dados ficam guardados</small></h2>
+<ol>
+<li>Entre em <a href="https://console.firebase.google.com">console.firebase.google.com</a> com sua conta Google. Clique em <b class="k">Criar um projeto</b> (ou <b class="k">Adicionar projeto</b>). Dê o nome <code>minha-agenda</code>, <b>desligue</b> o Google Analytics e clique em <b class="k">Criar projeto</b>.</li>
+<li>No menu da esquerda, abra <b class="k">Criação</b> (Build) e depois <b class="k">Authentication</b>. Clique em <b class="k">Vamos começar</b>. Na aba <b class="k">Método de login</b>, escolha <b class="k">E-mail/senha</b>, ligue só a primeira chave (“E-mail/senha”) e clique em <b class="k">Salvar</b>.</li>
+<li>Ainda em <b class="k">Criação</b>, abra <b class="k">Firestore Database</b> e clique em <b class="k">Criar banco de dados</b>. Escolha o local <code>southamerica-east1 (São Paulo)</code>, depois <b class="k">Iniciar no modo de produção</b>, e clique em <b class="k">Criar</b>.<br>Quando abrir, vá na aba <b class="k">Regras</b>, apague tudo o que está lá, cole o conteúdo do arquivo <code>firestore.rules</code> (abra no Bloco de Notas) e clique em <b class="k">Publicar</b>.
+<pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /agendas/{uid} {
+      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
+    }
+  }
+}</pre></li>
+<li>Clique na engrenagem ao lado de <b class="k">Visão geral do projeto</b> e em <b class="k">Configurações do projeto</b>. Desça até <b class="k">Seus apps</b> e clique no ícone <b class="k">&lt;/&gt;</b> (Web). Apelido: <code>Minha Agenda</code>. <b>Não</b> marque o Firebase Hosting. Clique em <b class="k">Registrar app</b>.<br>Vai aparecer um código com <code>const firebaseConfig = { apiKey: "…", authDomain: "…", … }</code>. Deixe essa página aberta: você vai copiar esse trecho no passo 8.</li>
+</ol>
+
+<h2>Parte 2: GitHub Pages<small>o endereço do app na internet</small></h2>
+<ol class="c2">
+<li>Crie uma conta gratuita em <a href="https://github.com/signup">github.com/signup</a> (se ainda não tiver). Seu nome de usuário vai fazer parte do endereço do app.</li>
+<li>Clique no <b class="k">+</b> no canto de cima e em <b class="k">New repository</b>. Nome: <code>minha-agenda</code>. Deixe <b class="k">Public</b> marcado e clique em <b class="k">Create repository</b>.</li>
+<li>Na página que abre, clique no link <b class="k">uploading an existing file</b>. Arraste todos os arquivos da pasta <code>minha-agenda</code> (pode deixar de fora este LEIA-ME) e clique em <b class="k">Commit changes</b>.</li>
+<li>Na lista de arquivos do GitHub, clique em <code>firebase-config.js</code> e no ícone de lápis (<b class="k">Edit</b>). Troque as linhas de <code>apiKey</code> até <code>appId</code> pelas que o Firebase mostrou no passo 4, mantendo a primeira linha <code>window.FIREBASE_CONFIG = {</code>. Deve ficar assim, com os seus valores:
+<pre>window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSy...",
+  authDomain: "minha-agenda-xxxx.firebaseapp.com",
+  projectId: "minha-agenda-xxxx",
+  storageBucket: "minha-agenda-xxxx.firebasestorage.app",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abc123"
+};</pre>Clique em <b class="k">Commit changes</b> duas vezes.</li>
+<li>Vá em <b class="k">Settings</b> (no topo do repositório) e depois em <b class="k">Pages</b> no menu da esquerda. Em <b class="k">Source</b>, escolha <b class="k">Deploy from a branch</b>. Em <b class="k">Branch</b>, escolha <code>main</code> e <code>/ (root)</code> e clique em <b class="k">Save</b>.<br>Espere de 1 a 3 minutos e recarregue: vai aparecer <b>“Your site is live at”</b> com o endereço, algo como <code>https://SEU-USUARIO.github.io/minha-agenda/</code>.</li>
+</ol>
+
+<h2>Parte 3: Usar no computador e no iPhone</h2>
+<ol class="c3">
+<li><b>No computador:</b> abra o endereço. Na caixa <b class="k">Entrar para sincronizar</b>, digite seu e-mail e uma senha (6 caracteres ou mais) e clique em <b class="k">Criar conta</b>. Deve aparecer “Tudo salvo na nuvem”.</li>
+<li><b>Trazer o que você já tem:</b> no app offline ou na versão do Claude, abra <b class="k">Backup e restauração</b> e clique em <b class="k">Baixar backup agora</b>. No app novo, abra <b class="k">Backup e restauração</b>, clique em <b class="k">Restaurar de arquivo .json</b> e escolha esse arquivo. Tudo vai para a nuvem.</li>
+<li><b>No iPhone:</b> abra o endereço no <b>Safari</b> e entre com o <b>mesmo e-mail e senha</b>. Toque em <b class="k">Compartilhar</b> (o quadrado com a seta) e depois em <b class="k">Adicionar à Tela de Início</b> e <b class="k">Adicionar</b>. Abra sempre pelo ícone “Agenda”.</li>
+<li><b>Feche a porta:</b> depois de criar a sua conta, volte ao Firebase em <b class="k">Authentication</b>, aba <b class="k">Configurações</b>, item <b class="k">Ações do usuário</b>. Desmarque <b class="k">Ativar criação (inscrição)</b> e salve. Assim ninguém mais consegue criar conta no seu app.</li>
+</ol>
+
+<h2>Bom saber</h2>
+<ul>
+<li><b>Sem internet:</b> depois do primeiro acesso, o app abre e funciona sem internet. O que você fizer fica no aparelho e sobe sozinho quando a conexão volta. Se você mudou coisas em dois aparelhos sem internet, ele junta as duas versões. Uma coisa apagada sem internet pode voltar nesse caso, e é só apagar de novo.</li>
+<li><b>Privacidade:</b> o código do app fica público no GitHub, mas os seus dados não. Eles ficam no Firebase e só abrem com o seu e-mail e senha. O código do <code>firebase-config.js</code> não é uma senha: ele só diz qual é o seu projeto.</li>
+<li><b>Custo:</b> o plano gratuito do Firebase (Spark) aguenta com folga uma pessoa usando todo dia. A agenda inteira fica num único documento, com limite de 1 MB, o que dá anos de eventos e gastos.</li>
+<li><b>Notificações:</b> no computador, os avisos funcionam com o app aberto (clique em <b class="k">Ativar</b>). No iPhone, avisos com o app fechado não são possíveis nesse formato.</li>
+<li><b>Atualizar o app:</b> se eu te mandar uma versão nova, é só subir o <code>index.html</code> novo no GitHub (passo 7) e abrir o app duas vezes.</li>
+<li><b>Esqueceu a senha?</b> Digite o e-mail e toque em <b class="k">Esqueci a senha</b>. O Firebase manda um e-mail para trocar.</li>
+</ul>
+
+<h2>Se aparecer algum erro</h2>
+<ul>
+<li><b>“Nuvem não configurada”:</b> o <code>firebase-config.js</code> ainda está com <code>COLE_AQUI</code>. Refaça o passo 8.</li>
+<li><b>“O login por e-mail e senha não está ativado”:</b> refaça o passo 2.</li>
+<li><b>“Sem permissão: confira as regras”:</b> refaça a parte das Regras do passo 3.</li>
+<li><b>A página do GitHub dá erro 404:</b> espere mais alguns minutos e confira se o arquivo se chama <code>index.html</code>, com letras minúsculas.</li>
+<li><b>O iPhone mostra uma versão antiga:</b> feche o app, abra de novo e espere alguns segundos.</li>
+</ul>
+</main>
+</body>
+</html>
